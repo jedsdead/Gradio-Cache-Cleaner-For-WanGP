@@ -1,7 +1,7 @@
 {
     "name": "Gradio Cache Cleaner",
     "author": "Jedsdeadbaby",
-    "version": "0.1",
+    "version": "0.2",
     "description": "Deletes old copies from Gradio's cache folder, which otherwise keeps every video you view or upload.",
     "date": "2026-10-16",
     "wan2gp_version": ""

@@ -15,7 +15,7 @@ import threading
 import time
 
 RUN_STARTED = time.time()   # files created before this are leftovers from earlier runs
-_EMPTY_DIR_GRACE = 600      # Gradio creates a folder just before copying into it: keep young empty folders
+_EMPTY_DIR_GRACE = 120      # Gradio creates a folder just before copying into it: keep young empty folders it didn't fill yet
 _lock = threading.Lock()
 
 
@@ -74,8 +74,11 @@ def sweep(max_age=None, created_before=None):
         return 0, 0, 0, f"not cleaning {folder}: {problem}"
     now = time.time()
     removed = freed = skipped = 0
+    root_key = os.path.normcase(folder)
+    emptied = set()   # folders this sweep removed something from: deleted as soon as they are empty
     with _lock:
         for root, _dirs, files in os.walk(folder, topdown=False):
+            key = os.path.normcase(root)
             for name in files:
                 path = os.path.join(root, name)
                 try:
@@ -91,14 +94,20 @@ def sweep(max_age=None, created_before=None):
                     os.remove(path)
                     removed += 1
                     freed += st.st_size
+                    emptied.add(key)
                 except OSError:
                     skipped += 1
-            if os.path.normcase(root) != os.path.normcase(folder):
-                try:
-                    if not os.listdir(root) and now - os.stat(root).st_mtime > _EMPTY_DIR_GRACE:
-                        os.rmdir(root)
-                except OSError:
-                    pass
+            if key == root_key:
+                continue  # Gradio's folder itself is kept
+            try:
+                if os.listdir(root):
+                    continue
+                # Empty: remove it if this sweep emptied it, or if Gradio left it empty for a while
+                if key in emptied or now - os.stat(root).st_mtime > _EMPTY_DIR_GRACE:
+                    os.rmdir(root)
+                    emptied.add(os.path.normcase(os.path.dirname(root)))
+            except OSError:
+                pass
     return removed, freed, skipped, None
 
 

@@ -17,7 +17,7 @@ class GradioCacheCleanerPlugin(WAN2GPPlugin):
     def __init__(self):
         super().__init__()
         self.name = "Gradio Cache Cleaner"
-        self.version = "0.1"
+        self.version = "0.2"
         self.description = "Deletes old copies from Gradio's cache folder, which otherwise keeps every video you view or upload."
         settings.load()
 
